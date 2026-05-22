@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Lingo Cat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400;9..144,700;9..144,900&family=Bricolage+Grotesque:wght@500;700;800&family=Geist+Mono:wght@500;700&family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1A1A1A;
+    --cream: #FFF1E0;
+    --magenta: #FF3E7F;
+    --mustard: #F8B500;
+    --coral: #C44569;
+    --night: #2E1A47;
+    --green: #06D6A0;
+    --red: #EF476F;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--ink);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 100dvh;
+    max-height: 900px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    transition: background 0.5s ease;
+  }
+
+  .game-wrap.theme-aurora {
+    background:
+      radial-gradient(ellipse 70% 50% at 80% 100%, rgba(255, 200, 170, 0.55), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(255, 220, 235, 0.45), transparent 60%),
+      linear-gradient(180deg, #C5E3FF 0%, #D8ECFF 35%, #FFE3D5 80%, #FFD3B8 100%);
+  }
+
+  .game-wrap.theme-reef {
+    background:
+      radial-gradient(ellipse 70% 50% at 80% 100%, rgba(220, 250, 200, 0.6), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 20%, rgba(255, 255, 200, 0.45), transparent 60%),
+      linear-gradient(180deg, #D6F0FA 0%, #E4F5D8 50%, #C8E6A0 100%);
+  }
+
+  .game-wrap.theme-ember {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 100%, rgba(255, 170, 180, 0.6), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255, 220, 200, 0.55), transparent 60%),
+      linear-gradient(180deg, #FFE0E8 0%, #FFD0C8 50%, #FFB8A8 100%);
+  }
+
+  .game-wrap.theme-dusk {
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 20%, rgba(255, 225, 245, 0.55), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 70% 100%, rgba(200, 200, 255, 0.55), transparent 60%),
+      linear-gradient(180deg, #E5DDFA 0%, #EDDCF7 50%, #FAD6E8 100%);
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* HUD */
+  .hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: env(safe-area-inset-top, 16px) 18px 0;
+    padding-top: max(env(safe-area-inset-top), 16px);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 12px;
+  }
+
+  .lives {
+    background: rgba(40, 40, 60, 0.45);
+    color: #FFFFFF;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    box-shadow: 0 4px 14px rgba(40, 40, 80, 0.18);
+  }
+
+  .heart {
+    color: var(--magenta);
+    font-size: 14px;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .heart.lost {
+    opacity: 0.2;
+    transform: scale(0.6);
+  }
+
+  .score {
+    background: rgba(40, 40, 60, 0.45);
+    color: #FFFFFF;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    font-family: 'Geist Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    min-width: 60px;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(40, 40, 80, 0.18);
+  }
+
+  .word-card {
+    margin: 8px auto 0;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 18px;
+    padding: 6px 18px 8px;
+    text-align: center;
+    box-shadow:
+      0 4px 12px rgba(80, 90, 130, 0.15),
+      0 1px 3px rgba(80, 90, 130, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    max-width: 220px;
+    transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .word-card.flash-correct {
+    background: rgba(232, 252, 240, 0.97);
+    border-color: rgba(6, 214, 160, 0.55);
+    box-shadow:
+      0 4px 12px rgba(6, 214, 160, 0.22),
+      0 0 0 2px rgba(6, 214, 160, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    animation: pop 0.4s ease;
+  }
+
+  .word-card.flash-wrong {
+    background: rgba(255, 232, 236, 0.97);
+    border-color: rgba(239, 71, 105, 0.55);
+    box-shadow:
+      0 4px 12px rgba(239, 71, 105, 0.22),
+      0 0 0 2px rgba(239, 71, 105, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    animation: shake 0.4s ease;
+  }
+
+  @keyframes pop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .word-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    opacity: 0.5;
+    margin-bottom: 0;
+  }
+
+  .word {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1.1;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  }
+
+  .word.ja {
+    font-family: 'Noto Serif JP', serif;
+    font-style: normal;
+    font-weight: 900;
+    font-variation-settings: normal;
+    font-size: 26px;
+    letter-spacing: 0.02em;
+  }
+
+  .pron {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: rgba(26, 26, 26, 0.5);
+    margin-top: 2px;
+    display: none;
+  }
+
+  .word-card.flash-correct .pron,
+  .word-card.flash-wrong .pron {
+    display: none !important;
+  }
+
+  .countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: clamp(96px, 28vw, 160px);
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.96);
+    text-shadow:
+      0 0 40px rgba(192, 132, 252, 0.7),
+      0 0 80px rgba(236, 72, 153, 0.4),
+      0 6px 24px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    z-index: 7;
+    display: none;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  }
+
+  .countdown.go {
+    font-size: clamp(64px, 18vw, 110px);
+    color: rgba(34, 211, 238, 1);
+    text-shadow:
+      0 0 40px rgba(34, 211, 238, 0.8),
+      0 0 80px rgba(34, 211, 238, 0.4),
+      0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .countdown.show {
+    display: block;
+    animation: countPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes countPop {
+    0% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+    25% { opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.92; }
+  }
+
+  /* Start screen */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: safe center;
+    z-index: 10;
+    padding: 28px 32px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(10, 10, 25, 0.55) 0%, rgba(10, 10, 25, 0.35) 100%);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overlay > * { flex-shrink: 0; }
+
+  .overlay.hidden {
+    display: none;
+  }
+
+  .title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(48px, 13vw, 72px);
+    line-height: 0.85;
+    color: var(--cream);
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+
+  .title .lingo { display: block; }
+  .title .flap {
+    display: block;
+    color: var(--magenta);
+    font-style: italic;
+    font-variation-settings: 'SOFT' 100;
+  }
+
+  .tagline {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--mustard);
+    margin: 14px 0 22px;
+  }
+
+  .instructions {
+    color: var(--cream);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 280px;
+    margin-bottom: 22px;
+    opacity: 0.85;
+  }
+
+  .instructions strong {
+    color: var(--magenta);
+    font-weight: 700;
+  }
+
+  .btn {
+    position: relative;
+    background: rgba(255, 255, 255, 0.10);
+    color: var(--cream);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    padding: 18px 48px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    pointer-events: auto;
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    /* Liquid-glass depressed-surface shadow stack */
+    box-shadow:
+      0 0 8px rgba(0, 0, 0, 0.04),
+      0 4px 14px rgba(0, 0, 0, 0.18),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 0.95),
+      inset -3px -3px 0.5px -3px rgba(255, 255, 255, 0.75),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.55),
+      inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.55),
+      inset 0 0 8px 6px rgba(255, 255, 255, 0.07),
+      inset 0 0 2px 2px rgba(255, 255, 255, 0.05),
+      0 0 18px rgba(255, 255, 255, 0.10);
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.3s ease,
+                box-shadow 0.3s ease;
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: scale(1.04);
+    box-shadow:
+      0 0 10px rgba(0, 0, 0, 0.05),
+      0 6px 20px rgba(0, 0, 0, 0.22),
+      inset 3px 3px 0.5px -3px rgba(255, 255, 255, 1),
+      inset -3px -3px 0.5px -3px rgba(255, 255, 255, 0.85),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.65),
+      inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.65),
+      inset 0 0 10px 6px rgba(255, 255, 255, 0.10),
+      inset 0 0 3px 2px rgba(255, 255, 255, 0.07),
+      0 0 24px rgba(255, 255, 255, 0.18);
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2),
+      inset 3px 3px 4px -3px rgba(255, 255, 255, 0.9),
+      inset -3px -3px 4px -3px rgba(255, 255, 255, 0.6),
+      inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.5),
+      inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.5),
+      inset 0 0 12px 8px rgba(255, 255, 255, 0.12),
+      inset 0 0 3px 3px rgba(255, 255, 255, 0.07);
+  }
+
+  .lang-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .picker-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    color: rgba(255, 241, 224, 0.45);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .theme-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 8px;
+    justify-content: center;
+    pointer-events: auto;
+  }
+
+  .theme-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.25s;
+    position: relative;
+  }
+
+  .theme-dot[data-theme="aurora"] { background: linear-gradient(135deg, #BCE2FF 0%, #FFDDC9 100%); }
+  .theme-dot[data-theme="reef"]   { background: linear-gradient(135deg, #D6F0FA 0%, #C8E6A0 100%); }
+  .theme-dot[data-theme="ember"]  { background: linear-gradient(135deg, #FFE0E8 0%, #FFB8A8 100%); }
+  .theme-dot[data-theme="dusk"]   { background: linear-gradient(135deg, #E5DDFA 0%, #FAD6E8 100%); }
+
+  .theme-dot.active {
+    border-color: #ffffff;
+    transform: scale(1.18);
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.16),
+      0 0 24px rgba(255, 255, 255, 0.3);
+  }
+
+  .theme-dot:active {
+    transform: scale(1.05);
+  }
+
+  .theme-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--cream);
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 18px;
+    letter-spacing: 0.01em;
+    min-height: 22px;
+  }
+
+  .lang-tile {
+    background: rgba(255, 241, 224, 0.06);
+    color: var(--cream);
+    border: 2px solid rgba(255, 241, 224, 0.18);
+    border-radius: 16px;
+    padding: 14px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    pointer-events: auto;
+    font-family: inherit;
+    backdrop-filter: blur(2px);
+  }
+
+  .lang-tile .flag {
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  }
+
+  .lang-tile .native {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .lang-tile .native.ja {
+    font-family: 'Noto Serif JP', serif;
+    font-style: normal;
+    font-weight: 900;
+    font-size: 17px;
+  }
+
+  .lang-tile .english {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    opacity: 0.55;
+    margin-top: 3px;
+  }
+
+  .lang-tile.active {
+    background: var(--cream);
+    color: var(--ink);
+    border-color: var(--cream);
+  }
+
+  .lang-tile:active {
+    transform: scale(0.96);
+  }
+
+  /* Game over */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .stat-box {
+    background: var(--cream);
+    border: 3px solid var(--cream);
+    border-radius: 16px;
+    padding: 14px 8px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 32px;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .game-over-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 48px;
+    color: var(--magenta);
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+
+  .game-over-sub {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--mustard);
+    margin-bottom: 28px;
+  }
+
+  /* Tap feedback hint */
+  .tap-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--cream);
+    opacity: 0.6;
+    animation: bob 1.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.4; }
+    50% { transform: translateX(-50%) translateY(-6px); opacity: 0.8; }
+  }
+</style>
+</head>
+<body>
+<div class="game-wrap theme-aurora" id="wrap">
+  <canvas id="game"></canvas>
+
+  <div class="hud" id="hud" style="display:none;">
+    <div class="top-row">
+      <div class="lives" id="lives">
+        <span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span>
+      </div>
+      <div class="score" id="score">0</div>
+    </div>
+    <div class="word-card-float">
+      <div class="word-card" id="wordCard">
+        <div class="word-label" id="wordLabel">translate</div>
+        <div class="word" id="word">perro</div>
+        <div class="pron" id="pron"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="countdown" id="countdown"></div>
+
+  <div class="overlay" id="startScreen">
+    <h1 class="title">
+      <span class="lingo">Lingo</span>
+      <span class="flap">Cat.</span>
+    </h1>
+    <div class="tagline">tap · learn · pounce</div>
+    <p class="instructions">
+      Tap to hop. Read the word at the top, then guide your kitten through the half labeled with the <strong>correct translation</strong>. Four lives. Don't crash.
+    </p>
+    <div class="picker-label">Language</div>
+    <div class="lang-grid" id="langRow">
+      <button class="lang-tile active" data-lang="es">
+        <span class="flag">🇪🇸</span>
+        <span class="native">Español</span>
+        <span class="english">Spanish</span>
+      </button>
+      <button class="lang-tile" data-lang="fr">
+        <span class="flag">🇫🇷</span>
+        <span class="native">Français</span>
+        <span class="english">French</span>
+      </button>
+      <button class="lang-tile" data-lang="de">
+        <span class="flag">🇩🇪</span>
+        <span class="native">Deutsch</span>
+        <span class="english">German</span>
+      </button>
+      <button class="lang-tile" data-lang="ja">
+        <span class="flag">🇯🇵</span>
+        <span class="native ja">日本語</span>
+        <span class="english">Japanese</span>
+      </button>
+    </div>
+
+    <div class="picker-label">Theme</div>
+    <div class="theme-row" id="themeRow">
+      <button class="theme-dot active" data-theme="aurora" aria-label="Aurora"></button>
+      <button class="theme-dot" data-theme="reef" aria-label="Reef"></button>
+      <button class="theme-dot" data-theme="ember" aria-label="Ember"></button>
+      <button class="theme-dot" data-theme="dusk" aria-label="Dusk"></button>
+    </div>
+    <div class="theme-name" id="themeName">Sky</div>
+
+    <button class="btn" id="startBtn">Start</button>
+  </div>
+
+  <div class="overlay hidden" id="gameOverScreen">
+    <div class="game-over-title">Crashed.</div>
+    <div class="game-over-sub" id="gameOverSub">try again</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">score</div>
+        <div class="stat-value" id="finalScore">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">correct</div>
+        <div class="stat-value" id="finalCorrect">0</div>
+      </div>
+    </div>
+
+    <div class="picker-label">Language</div>
+    <div class="lang-grid">
+      <button class="lang-tile active" data-lang="es">
+        <span class="flag">🇪🇸</span>
+        <span class="native">Español</span>
+        <span class="english">Spanish</span>
+      </button>
+      <button class="lang-tile" data-lang="fr">
+        <span class="flag">🇫🇷</span>
+        <span class="native">Français</span>
+        <span class="english">French</span>
+      </button>
+      <button class="lang-tile" data-lang="de">
+        <span class="flag">🇩🇪</span>
+        <span class="native">Deutsch</span>
+        <span class="english">German</span>
+      </button>
+      <button class="lang-tile" data-lang="ja">
+        <span class="flag">🇯🇵</span>
+        <span class="native ja">日本語</span>
+        <span class="english">Japanese</span>
+      </button>
+    </div>
+
+    <div class="picker-label">Theme</div>
+    <div class="theme-row">
+      <button class="theme-dot active" data-theme="aurora" aria-label="Sky"></button>
+      <button class="theme-dot" data-theme="reef" aria-label="Meadow"></button>
+      <button class="theme-dot" data-theme="ember" aria-label="Sunset"></button>
+      <button class="theme-dot" data-theme="dusk" aria-label="Dream"></button>
+    </div>
+    <div class="theme-name">Sky</div>
+
+    <button class="btn" id="restartBtn">Play again</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('wrap');
+  const hud = document.getElementById('hud');
+  const startScreen = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const wordEl = document.getElementById('word');
+  const wordLabelEl = document.getElementById('wordLabel');
+  const pronEl = document.getElementById('pron');
+  const wordCard = document.getElementById('wordCard');
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const finalScore = document.getElementById('finalScore');
+  const finalCorrect = document.getElementById('finalCorrect');
+  const gameOverSub = document.getElementById('gameOverSub');
+  const langRow = document.getElementById('langRow');
+  const themeRow = document.getElementById('themeRow');
+  const countdownEl = document.getElementById('countdown');
+  // langRow / themeRow are kept as references but the picker logic uses
+  // class-based delegation so both the start and game-over pickers stay in sync.
+
+  // ===== Word banks =====
+  const banks = {
+    es: [
+      ['perro','dog'],['gato','cat'],['casa','house'],['agua','water'],['libro','book'],
+      ['sol','sun'],['luna','moon'],['árbol','tree'],['rojo','red'],['azul','blue'],
+      ['pan','bread'],['leche','milk'],['mano','hand'],['ojo','eye'],['noche','night'],
+      ['día','day'],['amigo','friend'],['mesa','table'],['puerta','door'],['ventana','window'],
+      ['camino','road'],['flor','flower'],['hijo','son'],['música','music'],['tiempo','time']
+    ],
+    fr: [
+      ['chien','dog'],['chat','cat'],['maison','house'],['eau','water'],['livre','book'],
+      ['soleil','sun'],['lune','moon'],['arbre','tree'],['rouge','red'],['bleu','blue'],
+      ['pain','bread'],['lait','milk'],['main','hand'],['œil','eye'],['nuit','night'],
+      ['jour','day'],['ami','friend'],['table','table'],['porte','door'],['fenêtre','window'],
+      ['route','road'],['fleur','flower'],['fils','son'],['musique','music'],['temps','time']
+    ],
+    de: [
+      ['Hund','dog'],['Katze','cat'],['Haus','house'],['Wasser','water'],['Buch','book'],
+      ['Sonne','sun'],['Mond','moon'],['Baum','tree'],['rot','red'],['blau','blue'],
+      ['Brot','bread'],['Milch','milk'],['Hand','hand'],['Auge','eye'],['Nacht','night'],
+      ['Tag','day'],['Freund','friend'],['Tisch','table'],['Tür','door'],['Fenster','window'],
+      ['Straße','road'],['Blume','flower'],['Sohn','son'],['Musik','music'],['Zeit','time']
+    ],
+    ja: [
+      ['いぬ','dog','inu'],['ねこ','cat','neko'],['いえ','house','ie'],['みず','water','mizu'],['ほん','book','hon'],
+      ['たいよう','sun','taiyou'],['つき','moon','tsuki'],['き','tree','ki'],['あか','red','aka'],['あお','blue','ao'],
+      ['パン','bread','pan'],['ミルク','milk','miruku'],['て','hand','te'],['め','eye','me'],['よる','night','yoru'],
+      ['ひる','day','hiru'],['ともだち','friend','tomodachi'],['テーブル','table','teeburu'],['ドア','door','doa'],['まど','window','mado'],
+      ['みち','road','michi'],['はな','flower','hana'],['むすこ','son','musuko'],['おんがく','music','ongaku'],['じかん','time','jikan']
+    ]
+  };
+
+  let activeLang = 'es';
+  let words = banks[activeLang];
+
+  // ===== Themes =====
+  // Each theme: ambient bg orb colors (rgb triplets), halo + trail tint, display name
+  const themes = {
+    aurora: {
+      name: 'Sky',
+      orbs: ['255, 220, 200', '200, 230, 255', '255, 230, 240'],
+      bird: { core: '255, 250, 240', mid: '255, 200, 150', edge: '230, 150, 110' },
+      trail: '255, 220, 180',
+      halo: ['255, 230, 200', '255, 220, 235']
+    },
+    reef: {
+      name: 'Meadow',
+      orbs: ['220, 245, 200', '255, 245, 200', '200, 230, 220'],
+      bird: { core: '255, 255, 245', mid: '200, 230, 160', edge: '130, 180, 100' },
+      trail: '220, 240, 180',
+      halo: ['230, 250, 210', '255, 250, 220']
+    },
+    ember: {
+      name: 'Sunset',
+      orbs: ['255, 200, 200', '255, 220, 200', '255, 200, 220'],
+      bird: { core: '255, 245, 240', mid: '255, 180, 170', edge: '230, 130, 130' },
+      trail: '255, 200, 200',
+      halo: ['255, 210, 200', '255, 220, 220']
+    },
+    dusk: {
+      name: 'Dream',
+      orbs: ['225, 215, 250', '250, 215, 235', '215, 230, 250'],
+      bird: { core: '255, 250, 255', mid: '210, 200, 250', edge: '170, 160, 220' },
+      trail: '220, 215, 250',
+      halo: ['230, 220, 250', '250, 225, 240']
+    }
+  };
+  let activeTheme = 'aurora';
+  let tapRings = [];
+
+  // ===== Canvas sizing =====
+  let W = 0, H = 0, DPR = window.devicePixelRatio || 1;
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ===== Game state =====
+  let state = 'menu'; // menu | countdown | playing | over
+  let bird, obstacles, score, correctCount, lives, speed, frame, nextSpawn, particles;
+  let countdownFrames = 0;
+  let lastCountdownSecond = -1;
+  let displayedWordRef = null;
+
+  function reset() {
+    bird = { x: W * 0.28, y: H * 0.5, vy: 0, r: 28, rot: 0, trail: [], tapPulse: 0 };
+    obstacles = [];
+    score = 0;
+    correctCount = 0;
+    lives = 4;
+    speed = 1.7;
+    frame = 0;
+    nextSpawn = 70;
+    particles = [];
+    tapRings = [];
+    displayedWordRef = null;
+    updateHUD();
+  }
+
+  function pickRandomWord() {
+    return words[Math.floor(Math.random() * words.length)];
+  }
+
+  function showWord(wordArr) {
+    wordEl.textContent = wordArr[0];
+    wordEl.classList.toggle('ja', activeLang === 'ja');
+    wordLabelEl.textContent = 'translate';
+    if (wordArr.length > 2 && wordArr[2]) {
+      pronEl.textContent = wordArr[2];
+      pronEl.style.display = 'block';
+    } else {
+      pronEl.style.display = 'none';
+    }
+    displayedWordRef = wordArr;
+  }
+
+  function syncDisplayedWord() {
+    const next = obstacles.find(o => !o.scored && !o.crashed);
+    if (next && next.word !== displayedWordRef) {
+      showWord(next.word);
+    }
+  }
+
+  function updateHUD() {
+    scoreEl.textContent = score;
+    const hearts = livesEl.querySelectorAll('.heart');
+    hearts.forEach((h, i) => {
+      h.classList.toggle('lost', i >= lives);
+    });
+  }
+
+  // ===== Obstacles =====
+  function spawnObstacle() {
+    const w = 90;
+    const gapTotal = 280;             // one big gap, split into 2 halves visually
+    const minTopPipe = 70;
+    const minBotPipe = 50;
+    const range = Math.max(0, H - minTopPipe - minBotPipe - gapTotal);
+    const gapTop = minTopPipe + Math.random() * range;
+    const gapBot = gapTop + gapTotal;
+    const gapMid = gapTop + gapTotal / 2;
+
+    // Each obstacle owns its word so display + answers stay in sync
+    const word = pickRandomWord();
+    const correctAnswer = word[1];
+    let wrongAnswer;
+    do {
+      wrongAnswer = words[Math.floor(Math.random() * words.length)][1];
+    } while (wrongAnswer === correctAnswer);
+
+    const correctOnTop = Math.random() < 0.5;
+    obstacles.push({
+      x: W + 20, w,
+      gapTop, gapBot, gapMid,
+      answerTop: correctOnTop ? correctAnswer : wrongAnswer,
+      answerBot: correctOnTop ? wrongAnswer : correctAnswer,
+      correctSide: correctOnTop ? 'top' : 'bot',
+      correctAnswer,
+      word,
+      scored: false,
+      crashed: false
+    });
+
+    syncDisplayedWord();
+  }
+
+  // ===== Particles =====
+  function emitParticles(x, y, colorRGB, n = 12) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 1 + Math.random() * 3;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 30 + Math.random() * 20,
+        max: 50,
+        colorRGB,
+        size: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  // ===== Input =====
+  function flap() {
+    if (state === 'playing') {
+      bird.vy = -7.2;
+      bird.tapPulse = 1.0;
+      const themeColor = themes[activeTheme].trail;
+
+      // Expanding glow ring — VERY visible "I did something" indicator
+      tapRings.push({
+        x: bird.x,
+        y: bird.y,
+        r: bird.r * 0.8,
+        maxR: bird.r * 3.2,
+        life: 22,
+        max: 22,
+        color: themeColor
+      });
+
+      // Sparkle burst radiating from the cat
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + Math.random() * 0.25;
+        const s = 2.2 + Math.random() * 1.8;
+        particles.push({
+          x: bird.x + Math.cos(a) * bird.r * 0.7,
+          y: bird.y + Math.sin(a) * bird.r * 0.7,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s - 0.6,
+          life: 26 + Math.random() * 14,
+          max: 40,
+          colorRGB: themeColor,
+          size: 2.5 + Math.random() * 2
+        });
+      }
+      // Soft dust puff beneath the cat
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI * (0.7 + Math.random() * 0.6);
+        const s = 1.2 + Math.random() * 1.6;
+        particles.push({
+          x: bird.x + (Math.random() - 0.5) * bird.r * 0.7,
+          y: bird.y + bird.r * 0.7,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s * 0.5,
+          life: 24 + Math.random() * 12,
+          max: 36,
+          colorRGB: '255, 255, 255',
+          size: 3 + Math.random() * 2
+        });
+      }
+    }
+  }
+  function tapHandler(e) {
+    if (e.target.closest('.btn') || e.target.closest('.lang-tile')) return;
+    if (state === 'playing') {
+      flap();
+      e.preventDefault();
+    }
+  }
+  wrap.addEventListener('pointerdown', tapHandler);
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { flap(); e.preventDefault(); }
+  });
+
+  // ===== State transitions =====
+  function startGame() {
+    words = banks[activeLang];
+    reset();
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    hud.style.display = 'block';
+
+    // Pre-seed first obstacle (offscreen right) so the word card has something
+    // to display during countdown — gives the player time to read.
+    spawnObstacle();
+
+    state = 'countdown';
+    countdownFrames = 180; // ~3s at 60fps
+    lastCountdownSecond = -1;
+  }
+
+  function endGame() {
+    state = 'over';
+    countdownEl.classList.remove('show', 'go');
+    countdownEl.style.display = 'none';
+    finalScore.textContent = score;
+    finalCorrect.textContent = correctCount;
+    gameOverSub.textContent = score > 0
+      ? `${correctCount} translation${correctCount === 1 ? '' : 's'} nailed`
+      : `give it another go`;
+    gameOverScreen.classList.remove('hidden');
+    hud.style.display = 'none';
+  }
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+  // Picker handlers — use class-based delegation so the same UI works on
+  // both the start screen and the game-over screen, and they stay in sync.
+  document.addEventListener('click', (e) => {
+    const langChip = e.target.closest('.lang-tile');
+    if (langChip) {
+      activeLang = langChip.dataset.lang;
+      // Mirror the active state across every .lang-tile on the page
+      document.querySelectorAll('.lang-tile').forEach(c => {
+        c.classList.toggle('active', c.dataset.lang === activeLang);
+      });
+      return;
+    }
+    const themeDot = e.target.closest('.theme-dot');
+    if (themeDot) {
+      setTheme(themeDot.dataset.theme);
+    }
+  });
+
+  function setTheme(name) {
+    if (!themes[name]) return;
+    activeTheme = name;
+    wrap.classList.remove('theme-aurora', 'theme-reef', 'theme-ember', 'theme-dusk');
+    wrap.classList.add('theme-' + name);
+    // Mirror across every theme-name and theme-dot on the page
+    document.querySelectorAll('.theme-name').forEach(n => {
+      n.textContent = themes[name].name;
+    });
+    document.querySelectorAll('.theme-dot').forEach(d => {
+      d.classList.toggle('active', d.dataset.theme === name);
+    });
+  }
+
+  // ===== Countdown rendering =====
+  function tickCountdown() {
+    const sec = Math.ceil(countdownFrames / 60);
+    if (sec !== lastCountdownSecond) {
+      lastCountdownSecond = sec;
+      const text = sec > 0 ? String(sec) : 'GO!';
+      countdownEl.textContent = text;
+      countdownEl.classList.toggle('go', sec === 0);
+      countdownEl.classList.remove('show');
+      void countdownEl.offsetWidth;
+      countdownEl.style.display = 'block';
+      countdownEl.classList.add('show');
+    }
+    countdownFrames--;
+    if (countdownFrames < -30) {
+      // Hide GO! after a brief moment
+      countdownEl.classList.remove('show');
+      countdownEl.style.display = 'none';
+      state = 'playing';
+      bird.vy = 0;
+    }
+  }
+
+  // ===== Gameplay update =====
+  function loseLife(o) {
+    if (o) o.crashed = true;
+    lives--;
+    updateHUD();
+    const correctAnswer = o ? o.correctAnswer : null;
+    flashCard('wrong', correctAnswer);
+    emitParticles(bird.x, bird.y, '239, 71, 105', 22);
+    bird.vy = -4;
+    if (lives <= 0) {
+      endGame();
+    } else {
+      // Delay advancing the displayed word so the player can read the correct answer
+      setTimeout(syncDisplayedWord, 1100);
+    }
+  }
+
+  function flashCard(kind, correctAnswer) {
+    wordCard.classList.remove('flash-correct', 'flash-wrong');
+    void wordCard.offsetWidth;
+    wordCard.classList.add(kind === 'correct' ? 'flash-correct' : 'flash-wrong');
+
+    if (kind === 'wrong' && correctAnswer) {
+      // Briefly reveal the right answer so the user actually learns
+      wordLabelEl.textContent = 'correct answer';
+      wordEl.classList.remove('ja');
+      wordEl.textContent = correctAnswer;
+      pronEl.style.display = 'none';
+      displayedWordRef = null; // force re-show next sync
+    }
+
+    setTimeout(() => {
+      wordCard.classList.remove('flash-correct', 'flash-wrong');
+      if (kind === 'wrong') wordLabelEl.textContent = 'translate';
+    }, 900);
+  }
+
+  function update() {
+    if (state === 'menu' || state === 'over') return;
+    frame++;
+
+    // Trail (always — looks nice during countdown too)
+    bird.trail.push({ x: bird.x, y: bird.y });
+    if (bird.trail.length > 14) bird.trail.shift();
+
+    // Decay tap pulse — slow enough to clearly see crouch→pounce→settle
+    if (bird.tapPulse > 0) bird.tapPulse = Math.max(0, bird.tapPulse - 0.04);
+
+    if (state === 'countdown') {
+      // Gentle hover, no gravity, no movement
+      bird.y = H * 0.5 + Math.sin(frame * 0.11) * 8;
+      tickCountdown();
+      // Particles still animate so background feels alive
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+      }
+      particles = particles.filter(p => p.life > 0);
+      return;
+    }
+
+    // === Playing ===
+    // Physics — gentler for beginners
+    bird.vy += 0.38;
+    if (bird.vy > 9.5) bird.vy = 9.5;
+    bird.y += bird.vy;
+    bird.rot = Math.max(-0.5, Math.min(1.2, bird.vy * 0.08));
+
+    // Ceiling
+    if (bird.y < bird.r + 4) { bird.y = bird.r + 4; bird.vy = 0; }
+    // Floor
+    if (bird.y > H - bird.r - 4) {
+      bird.y = H - bird.r - 4;
+      lives = 0;
+      emitParticles(bird.x, bird.y, '239, 71, 105', 28);
+      updateHUD();
+      endGame();
+      return;
+    }
+
+    // Spawn (more breathing room than before)
+    nextSpawn--;
+    if (nextSpawn <= 0) {
+      spawnObstacle();
+      nextSpawn = 150;
+    }
+
+    // Move + collide
+    for (const o of obstacles) {
+      o.x -= speed;
+
+      const overlapping = bird.x + bird.r > o.x && bird.x - bird.r < o.x + o.w;
+      if (overlapping && !o.crashed && !o.scored) {
+        // Only the top and bottom pipes are solid — the divider is purely visual
+        const inTopPipe = bird.y - bird.r < o.gapTop;
+        const inBotPipe = bird.y + bird.r > o.gapBot;
+        if (inTopPipe || inBotPipe) {
+          loseLife(o);
+        }
+      }
+
+      // Decide answer once the bird's center passes the pipe's center
+      if (!o.scored && !o.crashed && bird.x > o.x + o.w / 2) {
+        o.scored = true;
+        const chosen = bird.y < o.gapMid ? 'top' : 'bot';
+        if (chosen === o.correctSide) {
+          score++;
+          correctCount++;
+          // Gentler speed ramp
+          if (correctCount % 8 === 0) speed = Math.min(speed + 0.15, 3.5);
+          updateHUD();
+          flashCard('correct');
+          emitParticles(bird.x + bird.r, bird.y, '34, 211, 238', 18);
+          syncDisplayedWord();
+        } else {
+          // Wrong half — loseLife handles the delayed sync
+          loseLife(o);
+        }
+      }
+    }
+
+    // Cull
+    obstacles = obstacles.filter(o => o.x + o.w > -20);
+
+    // Particles
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    // Tap rings — expanding glow
+    for (const ring of tapRings) {
+      const t = 1 - ring.life / ring.max;
+      ring.r = ring.r + (ring.maxR - ring.r) * 0.18;
+      ring.life--;
+    }
+    tapRings = tapRings.filter(r => r.life > 0);
+  }
+
+  function drawObstacle(o) {
+    drawCloud(o.x, 0, o.w, o.gapTop, 'bottom');
+    drawCloud(o.x, o.gapBot, o.w, H - o.gapBot, 'top');
+
+    // Soft dashed divider — purely visual, splits the gap into two answer zones
+    drawGapDivider(o.x, o.gapMid, o.w);
+
+    drawAnswerLabel(o.answerTop, o.x + o.w / 2, (o.gapTop + o.gapMid) / 2);
+    drawAnswerLabel(o.answerBot, o.x + o.w / 2, (o.gapMid + o.gapBot) / 2);
+  }
+
+  // Fluffy cloud obstacle — `puffyEdge` is which side faces the gap ('top' or 'bottom')
+  function drawCloud(x, y, w, h, puffyEdge) {
+    if (h <= 1) return;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(80, 90, 130, 0.22)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = puffyEdge === 'bottom' ? 6 : -6;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+
+    // Pre-defined puff positions for an organic shape
+    const puffs = [
+      { rel: 0.05, r: 16, depth: 16 },
+      { rel: 0.22, r: 22, depth: 4  },
+      { rel: 0.45, r: 26, depth: -2 },
+      { rel: 0.68, r: 22, depth: 6  },
+      { rel: 0.88, r: 18, depth: 12 }
+    ];
+
+    // Main body — flat rectangle, the puffs extend from the puffy edge
+    const inset = 18;
+    if (puffyEdge === 'bottom') {
+      ctx.fillRect(x, y, w, Math.max(0, h - inset));
+    } else {
+      ctx.fillRect(x, y + inset, w, Math.max(0, h - inset));
+    }
+
+    // Puffs
+    for (const p of puffs) {
+      const px = x + w * p.rel;
+      let py;
+      if (puffyEdge === 'bottom') {
+        py = y + h - p.depth;  // puff center near the bottom edge
+      } else {
+        py = y + p.depth;
+      }
+      ctx.beginPath();
+      ctx.arc(px, py, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Soft inner highlight on the lit side for cuteness
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    for (const p of puffs) {
+      const px = x + w * p.rel - p.r * 0.3;
+      const py = puffyEdge === 'bottom' ? (y + h - p.depth - p.r * 0.3) : (y + p.depth - p.r * 0.3);
+      ctx.beginPath();
+      ctx.arc(px, py, p.r * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawGapDivider(x, midY, w) {
+    // Soft dashed line splitting the gap into two answer zones
+    ctx.save();
+    ctx.setLineDash([5, 7]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, midY);
+    ctx.lineTo(x + w + 6, midY);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawAnswerLabel(text, cx, cy) {
+    ctx.font = '700 13px "Geist Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const m = ctx.measureText(text);
+    const w = m.width + 22;
+    const h = 26;
+    const x = cx - w / 2, y = cy - h / 2;
+
+    // Soft outer glow
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    roundedRect(x, y, w, h, 999, 999, 999, 999);
+    ctx.restore();
+
+    // Subtle inner gradient highlight
+    const grad = ctx.createLinearGradient(0, y, 0, y + h);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = grad;
+    roundedRect(x, y, w, h, 999, 999, 999, 999);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
+    ctx.lineWidth = 1;
+    roundedRectStroke(x + 0.5, y + 0.5, w - 1, h - 1, 999, 999, 999, 999);
+
+    // Text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '700 13px "Geist Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, cx, cy + 1);
+  }
+
+  function roundedRect(x, y, w, h, tl, tr, br, bl) {
+    const r = Math.min(Math.min(w, h) / 2, Math.max(tl, tr, br, bl));
+    const _tl = Math.min(tl, r), _tr = Math.min(tr, r), _br = Math.min(br, r), _bl = Math.min(bl, r);
+    ctx.beginPath();
+    ctx.moveTo(x + _tl, y);
+    ctx.lineTo(x + w - _tr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + _tr);
+    ctx.lineTo(x + w, y + h - _br);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - _br, y + h);
+    ctx.lineTo(x + _bl, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - _bl);
+    ctx.lineTo(x, y + _tl);
+    ctx.quadraticCurveTo(x, y, x + _tl, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function roundedRectStroke(x, y, w, h, tl, tr, br, bl) {
+    const r = Math.min(Math.min(w, h) / 2, Math.max(tl, tr, br, bl));
+    const _tl = Math.min(tl, r), _tr = Math.min(tr, r), _br = Math.min(br, r), _bl = Math.min(bl, r);
+    ctx.beginPath();
+    ctx.moveTo(x + _tl, y);
+    ctx.lineTo(x + w - _tr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + _tr);
+    ctx.lineTo(x + w, y + h - _br);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - _br, y + h);
+    ctx.lineTo(x + _bl, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - _bl);
+    ctx.lineTo(x, y + _tl);
+    ctx.quadraticCurveTo(x, y, x + _tl, y);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawBird() {
+    const t = themes[activeTheme];
+
+    // Trail — fading glow tail behind the cat
+    for (let i = 0; i < bird.trail.length; i++) {
+      const p = bird.trail[i];
+      const progress = (i + 1) / bird.trail.length;
+      const r = bird.r * (0.45 + progress * 0.55);
+      const alpha = progress * 0.32;
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 1.8);
+      grad.addColorStop(0, `rgba(${t.trail}, ${alpha})`);
+      grad.addColorStop(0.5, `rgba(${t.halo[1]}, ${alpha * 0.5})`);
+      grad.addColorStop(1, `rgba(${t.halo[1]}, 0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Outer halo — magical aura around the cat
+    const haloR = bird.r * 2.1;
+    const halo = ctx.createRadialGradient(bird.x, bird.y, 0, bird.x, bird.y, haloR);
+    halo.addColorStop(0, `rgba(${t.halo[0]}, 0.55)`);
+    halo.addColorStop(0.4, `rgba(${t.halo[1]}, 0.28)`);
+    halo.addColorStop(1, `rgba(${t.halo[1]}, 0)`);
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, haloR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === Hand-drawn cat — parts animated independently ===
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    ctx.rotate(bird.rot * 0.35);  // slight whole-body tilt with velocity
+
+    // Animation phases from tapPulse
+    const tp = bird.tapPulse;
+    let crouch = 0, pounce = 0;
+    if (tp > 0.78) {
+      const ph = (1 - tp) / 0.22;
+      crouch = Math.sin(ph * Math.PI / 2);
+    } else if (tp > 0.35) {
+      const ph = (0.78 - tp) / 0.43;
+      pounce = Math.sin(ph * Math.PI);
+    }
+    // Tail: gentle continuous sway + dramatic flick on tap
+    const tailSway = Math.sin(frame * 0.06) * 0.15 - Math.sin(tp * Math.PI) * 0.75;
+    // Blink every ~3.5 seconds, lasting ~7 frames
+    const blinkCycle = (frame + Math.floor(bird.x * 0.1)) % 220;
+    const blinkAmt = blinkCycle < 7 ? Math.sin(blinkCycle / 7 * Math.PI) : 0;
+    // Ear twitch on tap
+    const earTwitch = tp > 0.5 ? (1 - tp) * 2 : tp * 0.5;
+
+    drawCat(crouch, pounce, bird.rot, blinkAmt, tailSway, earTwitch);
+
+    ctx.restore();
+  }
+
+  // Hand-drawn cat with independently movable parts.
+  // All coordinates are relative to (0,0) = cat center.
+  function drawCat(crouch, pounce, wobble, blinkAmt, tailSway, earTwitch) {
+    const FUR = '#D4B091';
+    const BELLY = '#FCE8D2';
+    const STRIPE = '#8D6E63';
+    const OUTLINE = '#4E342E';
+    const EAR_PINK = '#F5B7B1';
+    const NOSE = '#E78A8E';
+    const COLLAR = '#C1554F';
+    const COLLAR_DARK = '#7B2A24';
+    const MEDAL = '#F1B937';
+
+    const bodySquashY = -crouch * 0.22 + pounce * 0.28;
+    const headOffsetY = -pounce * 6 + crouch * 4;
+    const pawLift = pounce * -3 + crouch * 1.5;
+
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // ===== TAIL (drawn first so body overlaps base) =====
+    ctx.save();
+    ctx.translate(18, 14);
+    ctx.rotate(tailSway);
+    // Outline pass
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 11.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(16, -2, 18, -14);
+    ctx.quadraticCurveTo(20, -25, 13, -29);
+    ctx.stroke();
+    // Fur fill on top
+    ctx.strokeStyle = FUR;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(16, -2, 18, -14);
+    ctx.quadraticCurveTo(20, -25, 13, -29);
+    ctx.stroke();
+    // White tail tip
+    ctx.fillStyle = BELLY;
+    ctx.beginPath();
+    ctx.arc(13, -29, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+
+    // ===== BODY (with squash) =====
+    ctx.save();
+    ctx.translate(0, 14);
+    ctx.scale(1 - bodySquashY * 0.35, 1 + bodySquashY);
+    ctx.translate(0, -14);
+
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    ctx.ellipse(0, 14, 20, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Belly
+    ctx.fillStyle = BELLY;
+    ctx.beginPath();
+    ctx.ellipse(0, 20, 11, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stripe on back
+    ctx.strokeStyle = STRIPE;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, 4); ctx.lineTo(-6, 8);
+    ctx.moveTo(0, 2);  ctx.lineTo(0, 6);
+    ctx.moveTo(8, 4);  ctx.lineTo(6, 8);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // ===== FRONT PAWS =====
+    ctx.fillStyle = BELLY;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.ellipse(-8, 30 + pawLift, 5.5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(8, 30 + pawLift, 5.5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Paw toe lines
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-9.5, 30 + pawLift); ctx.lineTo(-9.5, 33 + pawLift);
+    ctx.moveTo(-8, 30 + pawLift);   ctx.lineTo(-8, 33.5 + pawLift);
+    ctx.moveTo(-6.5, 30 + pawLift); ctx.lineTo(-6.5, 33 + pawLift);
+    ctx.moveTo(6.5, 30 + pawLift);  ctx.lineTo(6.5, 33 + pawLift);
+    ctx.moveTo(8, 30 + pawLift);    ctx.lineTo(8, 33.5 + pawLift);
+    ctx.moveTo(9.5, 30 + pawLift);  ctx.lineTo(9.5, 33 + pawLift);
+    ctx.stroke();
+
+    // ===== COLLAR =====
+    ctx.fillStyle = COLLAR;
+    ctx.beginPath();
+    ctx.ellipse(0, -1, 13, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = COLLAR_DARK;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Medallion
+    ctx.fillStyle = MEDAL;
+    ctx.beginPath();
+    ctx.arc(0, 3, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#A47D1D';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ===== HEAD (offset by pounce, with slight wobble) =====
+    ctx.save();
+    ctx.translate(0, -14 + headOffsetY);
+    ctx.rotate(wobble * 0.22);
+
+    // Left ear (with twitch)
+    ctx.save();
+    ctx.translate(-10, -3);
+    ctx.rotate(-earTwitch * 0.25);
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-4, -14);
+    ctx.lineTo(6, -3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.fillStyle = EAR_PINK;
+    ctx.beginPath();
+    ctx.moveTo(-0.5, -2);
+    ctx.lineTo(-2.5, -10);
+    ctx.lineTo(3.5, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Right ear (mirrored)
+    ctx.save();
+    ctx.translate(10, -3);
+    ctx.rotate(earTwitch * 0.25);
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(4, -14);
+    ctx.lineTo(-6, -3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.fillStyle = EAR_PINK;
+    ctx.beginPath();
+    ctx.moveTo(0.5, -2);
+    ctx.lineTo(2.5, -10);
+    ctx.lineTo(-3.5, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Head circle
+    ctx.fillStyle = FUR;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 17, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Cheek fluff
+    ctx.fillStyle = BELLY;
+    ctx.beginPath();
+    ctx.ellipse(-7, 6, 5, 3.5, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(7, 6, 5, 3.5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Forehead stripes
+    ctx.strokeStyle = STRIPE;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-3, -10); ctx.lineTo(-2, -6);
+    ctx.moveTo(3, -10);  ctx.lineTo(2, -6);
+    ctx.stroke();
+
+    // ===== EYES (blink) =====
+    const eyeH = Math.max(0.06, 1 - blinkAmt);
+    if (eyeH > 0.18) {
+      // Open eyes
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.ellipse(-6, -1, 3.5, 4.2 * eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(6, -1, 3.5, 4.2 * eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Pupils
+      ctx.fillStyle = '#1A1A1A';
+      ctx.beginPath();
+      ctx.ellipse(-5.5, -1, 2, 3.2 * eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(6.5, -1, 2, 3.2 * eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Highlight
+      if (eyeH > 0.5) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(-5, -2.6, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(7, -2.6, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Closed eyes — happy lines
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-8.5, -1); ctx.quadraticCurveTo(-6, -3, -3.5, -1);
+      ctx.moveTo(3.5, -1);  ctx.quadraticCurveTo(6, -3, 8.5, -1);
+      ctx.stroke();
+    }
+
+    // Nose
+    ctx.fillStyle = NOSE;
+    ctx.beginPath();
+    ctx.moveTo(-2, 5);
+    ctx.lineTo(2, 5);
+    ctx.lineTo(0, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+
+    // Mouth — slightly bigger when pouncing (open mouth surprise!)
+    const mouthOpen = pounce * 1.5;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(0, 9.5 + mouthOpen);
+    ctx.moveTo(0, 9.5 + mouthOpen);
+    ctx.quadraticCurveTo(-2.5, 11.5 + mouthOpen * 0.5, -4.5, 10.5 + mouthOpen * 0.5);
+    ctx.moveTo(0, 9.5 + mouthOpen);
+    ctx.quadraticCurveTo(2.5, 11.5 + mouthOpen * 0.5, 4.5, 10.5 + mouthOpen * 0.5);
+    ctx.stroke();
+
+    // Whiskers
+    ctx.strokeStyle = STRIPE;
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(-6, 5);  ctx.lineTo(-15, 3);
+    ctx.moveTo(-6, 7);  ctx.lineTo(-15, 7);
+    ctx.moveTo(6, 5);   ctx.lineTo(15, 3);
+    ctx.moveTo(6, 7);   ctx.lineTo(15, 7);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawAmbientOrbs() {
+    // Three slowly drifting gradient orbs that add depth and motion
+    const t = frame * 0.004;
+    const themeOrbs = themes[activeTheme].orbs;
+    const positions = [
+      { x: W * 0.18 + Math.sin(t) * 35,             y: H * 0.28 + Math.cos(t * 0.7) * 25,         r: W * 0.55, a: 0.18 },
+      { x: W * 0.88 + Math.sin(t * 1.1 + 1.3) * 30, y: H * 0.72 + Math.cos(t * 0.9 + 0.5) * 30,   r: W * 0.55, a: 0.14 },
+      { x: W * 0.5  + Math.sin(t * 0.55 + 2) * 50,  y: H * 0.48 + Math.cos(t * 1.2) * 25,         r: W * 0.65, a: 0.16 }
+    ];
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      const c = themeOrbs[i];
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      g.addColorStop(0, `rgba(${c}, ${p.a})`);
+      g.addColorStop(1, `rgba(${c}, 0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      const alpha = p.life / p.max;
+      const glowR = p.size * 5;
+
+      // Outer glow
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+      grad.addColorStop(0, `rgba(${p.colorRGB}, ${alpha * 0.9})`);
+      grad.addColorStop(0.5, `rgba(${p.colorRGB}, ${alpha * 0.35})`);
+      grad.addColorStop(1, `rgba(${p.colorRGB}, 0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bright core
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTapRings() {
+    for (const ring of tapRings) {
+      const t = 1 - ring.life / ring.max;
+      const alpha = (1 - t) * 0.7;
+      ctx.save();
+      ctx.strokeStyle = `rgba(${ring.color}, ${alpha})`;
+      ctx.lineWidth = 3 * (1 - t * 0.5);
+      ctx.shadowColor = `rgba(${ring.color}, ${alpha * 0.8})`;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawAmbientOrbs();
+
+    for (const o of obstacles) drawObstacle(o);
+
+    drawParticles();
+    drawTapRings();
+    drawBird();
+  }
+
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // Initial idle render
+  reset();
+  loop();
+})();
+</script>
+</body>
+</html>
